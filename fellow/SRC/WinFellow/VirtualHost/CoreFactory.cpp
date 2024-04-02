@@ -2,6 +2,7 @@
 #include "VirtualHost/CoreFactory.h"
 
 #include "Driver/Sound/DirectSoundDriver.h"
+#include "Driver/Sound/WASAPISoundDriver.h"
 
 #include "Service/Log.h"
 #include "Service/FileInformation.h"
@@ -21,7 +22,9 @@ using namespace fellow::hardfile;
 
 void CoreFactory::CreateDrivers()
 {
-  _core.Drivers.SoundDriver = new DirectSoundDriver();
+  // _core.Drivers.SoundDriver = new DirectSoundDriver();
+  /* TODO: read the sound driver that should be used from the config/make configurable via GUI*/
+  _core.Drivers.SoundDriver = new WASAPISoundDriver();
 }
 
 void CoreFactory::DestroyDrivers()

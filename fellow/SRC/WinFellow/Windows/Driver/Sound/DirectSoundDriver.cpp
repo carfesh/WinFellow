@@ -1,6 +1,6 @@
 /*=========================================================================*/
 /* Fellow Amiga Emulator                                                   */
-/* Sound driver for Windows                                                */
+/* DirectSound-based sound driver for Windows                              */
 /* Author: Petter Schau (peschau@online.no)                                */
 /*                                                                         */
 /* Copyright (C) 1991, 1992, 1996 Free Software Foundation, Inc.           */
@@ -21,7 +21,7 @@
 /*=========================================================================*/
 
 /** @file
- *  Sound driver for Windows
+ *  DirectSound-based sound driver for Windows
  */
 
 #define INITGUID
