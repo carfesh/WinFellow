@@ -25,6 +25,22 @@
  */
 
 #include "WASAPISoundDriver.h"
+#include "VirtualHost/Core.h"
+
+/*
+#define EXIT_ON_ERROR(hres)                                                                                                                                                   \
+  if (FAILED(hres))                                                                                                                                                           \
+  {                                                                                                                                                                           \
+    goto Exit;                                                                                                                                                                \
+  }
+  */
+
+#define SAFE_RELEASE(punk)                                                                                                                                                    \
+  if ((punk) != NULL)                                                                                                                                                         \
+  {                                                                                                                                                                           \
+    (punk)->Release();                                                                                                                                                        \
+    (punk) = NULL;                                                                                                                                                            \
+  }
 
 void WASAPISoundDriver::Play(int16_t *left, int16_t *right, uint32_t sampleCount)
 {
@@ -55,6 +71,54 @@ bool WASAPISoundDriver::IsInitialized()
 
 WASAPISoundDriver::WASAPISoundDriver() : ISoundDriver()
 {
+  HRESULT hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, IID_IMMDeviceEnumerator, (void **)&pEnumerator);
+  if FAILED (hr)
+  {
+    _core.Log->AddLog("Failed to start WASAPI-based sound driver (MMDeviceEnumerator)\n");
+    return;
+  }
+
+  hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
+  if FAILED (hr)
+  {
+    _core.Log->AddLog("Failed to start WASAPI-based sound driver (GetDefaultAudioEndpoint)\n");
+    goto error;
+  }
+
+  hr = pDevice->Activate(IID_IAudioClient, CLSCTX_ALL, NULL, (void **)&pAudioClient);
+  if FAILED (hr)
+  {
+    _core.Log->AddLog("Failed to start WASAPI-based sound driver (IAudioClient)\n");
+    goto error;
+  }
+
+  hr = pAudioClient->GetMixFormat(&pwfx);
+  if FAILED (hr)
+  {
+    _core.Log->AddLog("Failed to start WASAPI-based sound driver (GetMixFormat)\n");
+    goto error;
+  }
+
+  hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, hnsRequestedDuration, 0, pwfx, NULL);
+  if FAILED (hr)
+  {
+    _core.Log->AddLog("Failed to start WASAPI-based sound driver (audo client initialization)\n");
+    goto error;
+  }
+
+  // Tell the audio source which format to use.
+  /* hr = pMySource->SetFormat(pwfx);
+  EXIT_ON_ERROR(hr)*/
+
+  // _isInitialized = true;
+
+error:
+  CoTaskMemFree(pwfx);
+  SAFE_RELEASE(pEnumerator);
+  SAFE_RELEASE(pDevice);
+  SAFE_RELEASE(pAudioClient);
+  SAFE_RELEASE(pRenderClient);
+  return;
 }
 
 WASAPISoundDriver::~WASAPISoundDriver()
