@@ -7,20 +7,12 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "windows.h"
-#include "gui_debugger.h"
-
-#ifndef IDC_STATIC
-#define IDC_STATIC -1
-#endif
-
-
-
+#include "windows.h"
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Englisch (USA) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -160,13 +152,15 @@ BEGIN
     GROUPBOX        "buffer length",IDC_STATIC,130,100,100,50
     CONTROL         "Slider1",IDC_SLIDER_SOUND_BUFFER_LENGTH,
                     "msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,135,115,90,15
-    GROUPBOX        "options",IDC_STATIC,80,5,100,60
+    GROUPBOX        "options",IDC_STATIC,80,5,100,46
     CONTROL         "Directsound notification",IDC_CHECK_SOUND_NOTIFICATION,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,85,20,90,10
     LTEXT           "10",IDC_STATIC_BUFFER_LENGTH,170,130,9,8
     LTEXT           "ms",IDC_STATIC,180,130,10,8
     CONTROL         "",IDC_SLIDER_SOUND_VOLUME,"msctls_trackbar32",TBS_BOTH | WS_TABSTOP,7,32,66,23
     LTEXT           "100 %",IDC_STATIC_SOUND_VOLUME,35,28,20,8
+    GROUPBOX        "driver",IDC_STATIC,80,57,100,28
+    COMBOBOX        IDC_COMBO_SOUND_DRIVER,88,68,85,135,CBS_DROPDOWNLIST | WS_VSCROLL | WS_GROUP | WS_TABSTOP
 END
 
 IDD_FILESYSTEM DIALOGEX 0, 0, 235, 182
@@ -604,7 +598,7 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
-    "#include ""afxres.h""\r\0"
+    "#include ""windows.h""\r\0"
 END
 
 3 TEXTINCLUDE 
@@ -692,7 +686,7 @@ IDI_ICON_CPU            ICON                    "icons\\cpu.ico"
 // Bitmap
 //
 
-IDB_DISKDRIVE_LED_DISABLED BITMAP               "bitmaps\\disk_led_disabled_cool.bmp"
+IDB_DISKDRIVE_LED_DISABLED BITMAP                  "bitmaps\\disk_led_disabled_cool.bmp"
 
 IDB_DISKDRIVE_LED_OFF   BITMAP                  "bitmaps\\disk_led_off_cool.bmp"
 
@@ -725,6 +719,11 @@ BEGIN
     0
 END
 
+IDD_SOUND AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -736,12 +735,12 @@ BEGIN
     ID_OPTIONS_MULTIPLE_GRAPHICAL_BUFFERS "hello?"
 END
 
-#endif    // Englisch (USA) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Norwegisch Bokmål (Norwegen) resources
+// Norwegian BokmÃ¥l (Norway) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NOR)
 LANGUAGE LANG_NORWEGIAN, SUBLANG_NORWEGIAN_BOKMAL
@@ -754,7 +753,7 @@ LANGUAGE LANG_NORWEGIAN, SUBLANG_NORWEGIAN_BOKMAL
 
 IDB_DEBUG_ARROW         BITMAP                  "icons\\arrow.bmp"
 
-#endif    // Norwegisch Bokmål (Norwegen) resources
+#endif    // Norwegian BokmÃ¥l (Norway) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
