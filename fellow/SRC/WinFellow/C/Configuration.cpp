@@ -1661,7 +1661,7 @@ BOOLE cfgSetOption(cfg *config, const char *optionstr)
   {
     cfgSetSoundVolume(config, cfgGetUint32FromString(value));
   }
-  else if (name == "sound_driver")
+  else if (name == "fellow.sound_driver")
   {
     cfgSetSoundDriver(config, cfgGetSoundDriverFromString(value));
   }
@@ -1999,7 +1999,7 @@ BOOLE cfgSaveOptions(cfg *config, FILE *cfgfile)
   fprintf(cfgfile, "cpu_compatible=%s\n", cfgGetBOOLEToString(TRUE));
   fprintf(cfgfile, "cpu_type=%s\n", cfgGetCPUTypeToString(cfgGetCPUType(config)));
   fprintf(cfgfile, "sound_output=%s\n", cfgGetSoundEmulationToString(cfgGetSoundEmulation(config)));
-  fprintf(cfgfile, "sound_driver=%s\n", cfgGetSoundDriverToString(cfgGetSoundDriver(config)));
+  fprintf(cfgfile, "fellow.sound_driver=%s\n", cfgGetSoundDriverToString(cfgGetSoundDriver(config)));
   fprintf(cfgfile, "sound_channels=%s\n", cfgGetSoundStereoToString(cfgGetSoundStereo(config)));
   fprintf(cfgfile, "sound_bits=%s\n", cfgGetSound16BitsToString(cfgGetSound16Bits(config)));
   fprintf(cfgfile, "sound_frequency=%s\n", cfgGetSoundRateToString(cfgGetSoundRate(config)));

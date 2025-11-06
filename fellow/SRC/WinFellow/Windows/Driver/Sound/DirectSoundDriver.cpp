@@ -142,6 +142,8 @@ bool DirectSoundDriver::DSoundInitialize()
   _dataAvailable = CreateEvent(nullptr, 0, 0, nullptr);
   _canAddData = CreateEvent(nullptr, 0, 0, nullptr);
 
+  _core.Log->AddLog("DirectSoundDriver: Initialization successful.\n");
+
   return true;
 }
 
