@@ -121,7 +121,7 @@ User Manual
 \end_layout
 
 \begin_layout Date
-v0.5.12 (2025/10/31)
+v0.5.12 (2025/11/08)
 \end_layout
 
 \begin_layout Author
@@ -276,7 +276,9 @@ New features:
 
 \begin_deeper
 \begin_layout Itemize
-implements WASAPI sound driver
+implements WASAPI sound driver (shared mode,
+ will follow the default audio device configured in Windows);
+ the sound driver still defaults to DirectSound
 \end_layout
 
 \end_deeper
@@ -290,7 +292,7 @@ fixes a memory leak in the INI file handling code
 \end_layout
 
 \begin_layout Itemize
-revert GUI resource files to the previous versions so they can be edited from within Visual Studio
+revert GUI resource files to the previous versions so they can be edited from within Visual Studio again
 \end_layout
 
 \end_deeper
