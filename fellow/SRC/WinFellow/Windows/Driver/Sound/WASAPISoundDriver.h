@@ -24,6 +24,7 @@ private:
   WASAPISoundMode _modeCurrent;
   bool _isInitialized = false;
   bool _running = false;
+  bool _comInitializedInMainThread = false; // Track if COM was initialized in main thread
 
   // Ring buffer for audio data
   std::vector<int16_t> _ringBufferLeft, _ringBufferRight;

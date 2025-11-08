@@ -37,14 +37,18 @@
  *
  * ## WASAPI Driver Operation
  *
- * - **Initialization**: The driver sets up COM, enumerates audio devices, and activates the default render endpoint. It queries the mix format and configures the audio client
- * for shared-mode streaming with event-driven notifications. Device change notifications are registered to handle hotplug and default device changes.
+ * - **Initialization**: The driver sets up COM in the main thread (apartment-threaded), enumerates audio devices, and activates the default render endpoint.
+ * It queries the mix format and configures the audio client for shared-mode streaming with event-driven notifications. Device change notifications are registered
+ * to handle hotplug and default device changes. The main thread uses apartment-threaded COM, which allows external applications requiring single-threaded COM
+ * to operate without conflicts.
+ *
+ * - **Playback Thread**: A dedicated thread is created for audio streaming. This thread initializes its own COM context (apartment-threaded) and waits for
+ * WASAPI event notifications. It acquires the render buffer, fills it with audio data from the ring buffer, and manages format conversion as needed
+ * (bit depth, channel count, float/integer). The thread primes the buffer on startup and signals producers when buffer space is available. On thread exit,
+ * COM is properly uninitialized, keeping the main thread's COM context separate.
  *
  * - **Buffer Management**: Audio samples from the emulation core are written to a ring buffer. The buffer size is chosen to provide headroom for timing variations. If the
  * emulation sample rate does not match the WASAPI mix rate, linear interpolation is used for resampling.
- *
- * - **Playback Thread**: A dedicated thread waits for WASAPI event notifications, acquires the render buffer, and fills it with audio data from the ring buffer. Format
- * conversion is performed as needed (bit depth, channel count, float/integer). The thread primes the buffer on startup and signals producers when buffer space is available.
  *
  * - **Audio Data Flow**: The Play() method receives left and right channel samples from the emulation core and writes them to the ring buffer, with optional resampling. The
  * playback thread consumes samples, converts them to the required format, and passes them to WASAPI. Buffer underruns are logged and silence is output if necessary.
@@ -52,17 +56,20 @@
  * - **Device and Volume Control**: The driver supports device changes by reinitializing WASAPI and restarting emulation. Volume can be set via the IAudioEndpointVolume
  * interface if supported. Device notifications ensure the driver responds to changes in the default audio endpoint.
  *
- * - **Shutdown**: On destruction or emulation stop, the driver releases all WASAPI resources, stops playback, and cleans up synchronization objects and buffers.
+ * - **Shutdown**: On destruction or emulation stop, the driver releases all WASAPI resources, stops playback, cleans up synchronization objects and buffers,
+ * and uninitializes COM in both the main and playback threads.
  *
  * ## Design Notes
  *
- * - Uses event-driven playback for low-latency audio streaming.
+ * - Uses separate COM contexts: main thread for initialization/device enumeration, playback thread for audio streaming.
+ * - Both threads use apartment-threaded COM (COINIT_APARTMENTTHREADED) for compatibility with single-threaded external applications.
  * - Handles format conversion and resampling between emulation output and WASAPI mix format.
- * - Employs mutexes and events for thread safety.
+ * - Employs mutexes and events for thread safety between main and playback threads.
  * - Supports device hotplug and volume control where available.
  * - Provides logging for diagnostics.
  *
- * The WASAPISoundDriver is selected and managed by the WinFellow sound subsystem, providing audio output compatible with modern Windows systems.
+ * The WASAPISoundDriver is selected and managed by the WinFellow sound subsystem, providing audio output compatible with modern Windows systems
+ * while allowing external applications that require single-threaded COM to operate without conflicts.
  */
 
 #include "WASAPISoundDriver.h"
@@ -156,7 +163,22 @@ WASAPISoundDriver::~WASAPISoundDriver()
 bool WASAPISoundDriver::InitializeWASAPI()
 {
   HRESULT hr;
-  CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+  // Initialize COM in the main thread (apartment-threaded) for device enumeration.
+  // The playback thread will have its own COM initialization.
+  if (!_comInitializedInMainThread)
+  {
+    hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    if (SUCCEEDED(hr))
+    {
+      _comInitializedInMainThread = true;
+      _core.Log->AddLog("WASAPISoundDriver: COM initialized in main thread with COINIT_APARTMENTTHREADED.\n");
+    }
+    else
+    {
+      _core.Log->AddLog("WASAPISoundDriver: Failed to initialize COM in main thread (0x%08lx)\n", hr);
+      // Continue anyway; might already be initialized
+    }
+  }
 
   // Create the device enumerator if not already created
   if (!_deviceEnumerator)
@@ -358,7 +380,14 @@ void WASAPISoundDriver::ReleaseWASAPI()
     delete mode;
   _modes.clear();
 
-  CoUninitialize();
+  // Uninitialize COM in main thread if it was initialized by this driver
+  if (_comInitializedInMainThread)
+  {
+    CoUninitialize();
+    _comInitializedInMainThread = false;
+    _core.Log->AddLog("WASAPISoundDriver: COM uninitialized in main thread.\n");
+  }
+
   _isInitialized = false;
 }
 
@@ -547,6 +576,16 @@ DWORD WINAPI WASAPISoundDriver::ThreadProc(void *in)
  */
 DWORD WASAPISoundDriver::HandleThreadProc()
 {
+  // Initialize COM for this thread with single-threaded apartment model
+  HRESULT comInit = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  if (FAILED(comInit))
+  {
+    _core.Log->AddLog("WASAPISoundDriver: Failed to initialize COM in playback thread (0x%08lx)\n", comInit);
+    return 1;
+  }
+
+  _core.Log->AddLog("WASAPISoundDriver: COM initialized in playback thread with COINIT_APARTMENTTHREADED.\n");
+
   UINT32 bufferFrameCount = 0;
   _audioClient->GetBufferSize(&bufferFrameCount);
 
@@ -559,7 +598,7 @@ DWORD WASAPISoundDriver::HandleThreadProc()
     UINT32 numFramesAvailable = bufferFrameCount - numFramesPadding;
     if (numFramesAvailable > 0)
     {
-      hr = _renderClient->GetBuffer(numFramesAvailable, &pData);
+    hr = _renderClient->GetBuffer(numFramesAvailable, &pData);
       if (SUCCEEDED(hr))
       {
         AcquireSoundMutex();
@@ -595,10 +634,10 @@ DWORD WASAPISoundDriver::HandleThreadProc()
       FillBuffer(pData, numFramesAvailable);
       ReleaseSoundMutex();
 
-      // signal producers that space may be available now
+// signal producers that space may be available now
       if (_canAddData) SetEvent(_canAddData);
 
-      _renderClient->ReleaseBuffer(numFramesAvailable, 0);
+   _renderClient->ReleaseBuffer(numFramesAvailable, 0);
     }
     else
     {
@@ -609,6 +648,11 @@ DWORD WASAPISoundDriver::HandleThreadProc()
   // signal producers to wake if waiting
   if (_canAddData) SetEvent(_canAddData);
   _core.Log->AddLog("WASAPISoundDriver: Playback thread stopped.\n");
+
+  // Uninitialize COM for this thread
+  CoUninitialize();
+  _core.Log->AddLog("WASAPISoundDriver: COM uninitialized in playback thread.\n");
+
   return 0;
 }
 
